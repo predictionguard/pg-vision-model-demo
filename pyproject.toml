@@ -1,0 +1,16 @@
+[project]
+name = "pg-vision-models"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "marimo>=0.23.6",
+    "opencv-python-headless>=4.13.0.92",
+    "predictionguard>=2.11.1",
+    "python-dotenv>=1.2.2",
+]
+
+[tool.marimo.runtime]
+output_max_bytes = 52_428_800
+
