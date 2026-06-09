@@ -140,11 +140,14 @@ def _(client, frames_b64, mo, prompt, submit_btn):
     _content.append({"type": "text", "text": prompt.value.strip() or "Describe what is happening in this video."})
 
     import concurrent.futures as _cf
+    import time as _time
 
     _output = None
+    _cell_start = _time.perf_counter()
     try:
         with mo.status.spinner(title=f"Analyzing {len(frames_b64)} frames with Qwen3-VL-235B-A22B…"):
             with _cf.ThreadPoolExecutor(max_workers=1) as _pool:
+                _api_start = _time.perf_counter()
                 _future = _pool.submit(
                     client.chat.completions.create,
                     model="Qwen3-VL-235B-A22B",
@@ -153,16 +156,23 @@ def _(client, frames_b64, mo, prompt, submit_btn):
                     temperature=0.7,
                 )
                 response = _future.result()
+                _api_elapsed = _time.perf_counter() - _api_start
+        _cell_elapsed = _time.perf_counter() - _cell_start
         _answer = response["choices"][0]["message"]["content"]
+        _timing_md = mo.md(
+            f"**Timing** — API call: `{_api_elapsed:.2f}s` | Total cell: `{_cell_elapsed:.2f}s` | Overhead: `{_cell_elapsed - _api_elapsed:.2f}s`"
+        )
         _output = mo.vstack(
             [
                 mo.md("## Response"),
                 mo.callout(mo.md(_answer), kind="success"),
+                _timing_md,
             ],
             gap=2,
         )
     except Exception as e:
-        _output = mo.callout(mo.md(f"**Error:** `{e}`"), kind="danger")
+        _cell_elapsed = _time.perf_counter() - _cell_start
+        _output = mo.callout(mo.md(f"**Error:** `{e}`\n\n*Failed after `{_cell_elapsed:.2f}s`*"), kind="danger")
     mo.output.replace(_output)
     return
 
