@@ -5,7 +5,9 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "marimo>=0.23.6",
+    "marimo>=0.23.9",
+    "websockets>=14.2.0,<16.0",
+    "numpy>=1.26.0",
     "opencv-python-headless>=4.13.0.92",
     "predictionguard>=2.11.1",
     "python-dotenv>=1.2.2",
