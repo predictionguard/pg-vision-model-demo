@@ -46,21 +46,26 @@ def _(mo):
         label="Frames to extract",
         show_value=True,
     )
+    frame_size_slider = mo.ui.slider(
+        start=320, stop=1280, step=160, value=640,
+        label="Max frame dimension (px)",
+        show_value=True,
+    )
     prompt = mo.ui.text_area(
         label="Prompt",
         value="Describe what is happening in this video. Walk through the sequence of events shown across the frames.",
         rows=3,
     )
     submit_btn = mo.ui.run_button(label="Analyze Video")
-    return frame_slider, prompt, submit_btn, video_upload
+    return frame_size_slider, frame_slider, prompt, submit_btn, video_upload
 
 
 @app.cell
-def _(frame_slider, mo, prompt, submit_btn, video_upload):
+def _(frame_size_slider, frame_slider, mo, prompt, submit_btn, video_upload):
     mo.vstack(
         [
             video_upload,
-            mo.hstack([frame_slider, submit_btn], gap=2, align="end"),
+            mo.hstack([frame_slider, frame_size_slider, submit_btn], gap=2, align="end"),
             prompt,
         ],
         gap=2,
@@ -69,7 +74,7 @@ def _(frame_slider, mo, prompt, submit_btn, video_upload):
 
 
 @app.cell
-def _(base64, cv2, frame_slider, os, tempfile, video_upload):
+def _(base64, cv2, frame_size_slider, frame_slider, os, tempfile, video_upload):
     _files = video_upload.value
     frames_b64 = []
 
@@ -85,6 +90,7 @@ def _(base64, cv2, frame_slider, os, tempfile, video_upload):
             _cap = cv2.VideoCapture(_tmp.name)
             _total = int(_cap.get(cv2.CAP_PROP_FRAME_COUNT))
             _n = frame_slider.value
+            _max_dim = frame_size_slider.value
 
             if _total > 0:
                 for _i in range(_n):
@@ -92,6 +98,14 @@ def _(base64, cv2, frame_slider, os, tempfile, video_upload):
                     _cap.set(cv2.CAP_PROP_POS_FRAMES, _idx)
                     _ret, _frame = _cap.read()
                     if _ret:
+                        _h, _w = _frame.shape[:2]
+                        if max(_h, _w) > _max_dim:
+                            _scale = _max_dim / max(_h, _w)
+                            _frame = cv2.resize(
+                                _frame,
+                                (int(_w * _scale), int(_h * _scale)),
+                                interpolation=cv2.INTER_AREA,
+                            )
                         _, _buf = cv2.imencode(
                             ".jpg", _frame, [cv2.IMWRITE_JPEG_QUALITY, 80]
                         )
@@ -174,6 +188,16 @@ def _(client, frames_b64, mo, prompt, submit_btn):
         _cell_elapsed = _time.perf_counter() - _cell_start
         _output = mo.callout(mo.md(f"**Error:** `{e}`\n\n*Failed after `{_cell_elapsed:.2f}s`*"), kind="danger")
     mo.output.replace(_output)
+    return
+
+
+@app.cell
+def _():
+    return
+
+
+@app.cell
+def _():
     return
 
 
